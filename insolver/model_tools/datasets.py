@@ -1,10 +1,16 @@
 import os
+
+from typing import Union, Literal
+from os import PathLike
 from io import BytesIO
 from urllib.request import urlopen
 from zipfile import ZipFile
 
 
-def download_dataset(name, folder='datasets'):
+def download_dataset(
+    name: Literal['freMPL-R', 'US_Accidents', 'US_Accidents_small', 'Lending_Club', 'weatherAUS', 'AB_NYC_2019'],
+    folder: Union[str, 'PathLike'] = 'datasets',
+) -> str:
     """Function for downloading and unzipping example datasets
 
     Args:
@@ -22,7 +28,7 @@ def download_dataset(name, folder='datasets'):
         'US_Accidents_small': 'https://github.com/MindSetLib/Insolver/releases/download/v0.4.5/US_Accidents_small.zip',
         'Lending_Club': 'https://github.com/MindSetLib/Insolver/releases/download/v0.4.4/LendingClub.zip',
         'weatherAUS': 'https://github.com/MindSetLib/Insolver/releases/download/v0.4.15/weatherAUS.zip',
-        'AB_NYC_2019': 'https://github.com/MindSetLib/Insolver/releases/download/v0.4.15/AB_NYC_2019.zip'
+        'AB_NYC_2019': 'https://github.com/MindSetLib/Insolver/releases/download/v0.4.15/AB_NYC_2019.zip',
     }
     if name not in datasets.keys():
         return f'Dataset {name} is not found. Available datasets are {", ".join(datasets.keys())}'

@@ -1,11 +1,10 @@
 import os
-import pickle
 
 import pandas as pd
 from flask import Flask, request, jsonify
 
 from insolver import InsolverDataFrame
-from insolver.transforms import InsolverTransform, init_transforms
+from insolver.transforms import InsolverTransform, load_transforms
 from insolver.wrappers import InsolverGLMWrapper, InsolverGBMWrapper
 from insolver.serving import utils
 
@@ -17,7 +16,6 @@ from time import strftime, time
 
 model_path = os.environ['model_path']
 transforms_path = os.environ['transforms_path']
-module_path = os.environ['module_path']
 
 # Logging
 handler = RotatingFileHandler('app.log', maxBytes=100000, backupCount=5)
@@ -36,10 +34,8 @@ elif model and model.algo == 'glm':
 else:
     model = InsolverGLMWrapper(backend='h2o', load_path=model_path)
 
-# load and init transformations
-with open(transforms_path, 'rb') as file:
-    tranforms = pickle.load(file)
-tranforms = init_transforms(tranforms, module_path=module_path, inference=True)
+# load transformations
+tranforms = load_transforms(transforms_path)
 
 
 @app.route("/")
@@ -71,9 +67,7 @@ def predict():
     # Prediction
     predicted = model.predict(instransforms)
 
-    result = {
-        'predicted': predicted.tolist()
-    }
+    result = {'predicted': predicted.tolist()}
 
     # Response logging
     end_prediction = time()
@@ -88,13 +82,15 @@ def predict():
 def exceptions(e):
     current_datatime = strftime('[%Y-%b-%d %H:%M:%S]')
     error_message = traceback.format_exc()
-    logger.error('%s %s %s %s %s 5xx INTERNAL SERVER ERROR\n%s',
-                 current_datatime,
-                 request.remote_addr,
-                 request.method,
-                 request.scheme,
-                 request.full_path,
-                 error_message)
+    logger.error(
+        '%s %s %s %s %s 5xx INTERNAL SERVER ERROR\n%s',
+        current_datatime,
+        request.remote_addr,
+        request.method,
+        request.scheme,
+        request.full_path,
+        error_message,
+    )
     return jsonify({'error': 'Internal Server Error'}), 500
 
 

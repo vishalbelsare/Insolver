@@ -2,7 +2,6 @@ import os
 import copy
 import time
 import pickle
-import joblib
 
 
 class InsolverBaseWrapper:
@@ -11,6 +10,7 @@ class InsolverBaseWrapper:
     Parameters:
         backend (str): Name of the backend to build the model.
     """
+
     def __init__(self, backend):
         self.algo, self.backend, self._backends = None, backend, None
         self._back_load_dict, self._back_save_dict = None, None
@@ -66,15 +66,9 @@ class InsolverBaseWrapper:
         with open(load_path, 'rb') as _model:
             self.model = pickle.load(_model)
 
-    def _pickle_save(self, path, name):
+    def _pickle_save(self, path, name, **kwargs):
         with open(os.path.join(path, f'{name}.pickle'), 'wb') as _model:
-            pickle.dump(self.model, _model, pickle.HIGHEST_PROTOCOL)
-
-    def _joblib_load(self, load_path):
-        self.model = joblib.load(load_path)
-
-    def _joblib_save(self, path, name):
-        joblib.dump(self.model, os.path.join(path, f'{name}.joblib'))
+            pickle.dump(self.model, _model, **kwargs)
 
     def _update_meta(self):
         self.meta = self.__dict__.copy()

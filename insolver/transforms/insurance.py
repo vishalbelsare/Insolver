@@ -1,7 +1,7 @@
 import datetime
 
-import numpy as np
-import pandas as pd
+from numpy import timedelta64
+from pandas import isnull, merge
 
 
 class TransformExp:
@@ -12,14 +12,15 @@ class TransformExp:
             column type is integer.
         exp_max (int): Maximum value of drivers' experience in years, bigger values will be grouped, 52 by default.
     """
-    def __init__(self, column_driver_minexp, exp_max=52):
-        self.priority = 1
+
+    def __init__(self, column_driver_minexp, exp_max=52, priority=1):
+        self.priority = priority
         self.column_driver_minexp = column_driver_minexp
         self.exp_max = exp_max
 
     @staticmethod
     def _exp(exp, exp_max):
-        if pd.isnull(exp):
+        if isnull(exp):
             exp = None
         elif exp < 0:
             exp = None
@@ -43,16 +44,18 @@ class TransformAgeExpDiff:
             column type is integer.
         diff_min (int): Minimum allowed difference between age and experience in years.
     """
-    def __init__(self, column_driver_minage, column_driver_minexp, diff_min=18):
-        self.priority = 2
+
+    def __init__(self, column_driver_minage, column_driver_minexp, diff_min=18, priority=2):
+        self.priority = priority
         self.column_driver_minage = column_driver_minage
         self.column_driver_minexp = column_driver_minexp
         self.diff_min = diff_min
 
     def __call__(self, df):
         self.num_errors = len(df.loc[(df[self.column_driver_minage] - df[self.column_driver_minexp]) < self.diff_min])
-        df[self.column_driver_minexp].loc[(df[self.column_driver_minage] - df[self.column_driver_minexp])
-                                          < self.diff_min] = df[self.column_driver_minage] - self.diff_min
+        df[self.column_driver_minexp].loc[
+            (df[self.column_driver_minage] - df[self.column_driver_minexp]) < self.diff_min
+        ] = (df[self.column_driver_minage] - self.diff_min)
         return df
 
 
@@ -69,8 +72,9 @@ class TransformVehPower:
         power_step (int): Values of vehicles' power will be divided by this parameter, rounded to integers,
             10 by default.
     """
-    def __init__(self, column_veh_power, power_min=10, power_max=500, power_step=10):
-        self.priority = 1
+
+    def __init__(self, column_veh_power, power_min=10, power_max=500, power_step=10, priority=1):
+        self.priority = priority
         self.column_veh_power = column_veh_power
         self.power_min = power_min
         self.power_max = power_max
@@ -78,7 +82,7 @@ class TransformVehPower:
 
     @staticmethod
     def _power(power, power_min, power_max, power_step):
-        if pd.isnull(power):
+        if isnull(power):
             power = None
         elif power < power_min:
             power = power_min
@@ -89,8 +93,14 @@ class TransformVehPower:
         return power
 
     def __call__(self, df):
-        df[self.column_veh_power] = df[self.column_veh_power].apply(self._power, args=(self.power_min, self.power_max,
-                                                                                       self.power_step,))
+        df[self.column_veh_power] = df[self.column_veh_power].apply(
+            self._power,
+            args=(
+                self.power_min,
+                self.power_max,
+                self.power_step,
+            ),
+        )
         return df
 
 
@@ -103,8 +113,9 @@ class TransformVehAgeGetFromIssueYear:
         column_date_start (str): Column name in InsolverDataFrame containing policies' start dates, column type is date.
         column_veh_age (str): Column name in InsolverDataFrame for vehicles' ages in years, column type is integer.
     """
-    def __init__(self, column_veh_issue_year, column_date_start, column_veh_age):
-        self.priority = 0
+
+    def __init__(self, column_veh_issue_year, column_date_start, column_veh_age, priority=0):
+        self.priority = priority
         self.column_veh_issue_year = column_veh_issue_year
         self.column_date_start = column_date_start
         self.column_veh_age = column_veh_age
@@ -113,9 +124,9 @@ class TransformVehAgeGetFromIssueYear:
     def _veh_age_get(issueyear_datestart):
         veh_issue_year = issueyear_datestart[0]
         date_start = issueyear_datestart[1]
-        if pd.isnull(veh_issue_year):
+        if isnull(veh_issue_year):
             veh_age = None
-        elif pd.isnull(date_start):
+        elif isnull(date_start):
             veh_age = None
         elif veh_issue_year > datetime.datetime.now().year:
             veh_age = None
@@ -128,8 +139,9 @@ class TransformVehAgeGetFromIssueYear:
         return veh_age
 
     def __call__(self, df):
-        df[self.column_veh_age] = df[[self.column_veh_issue_year,
-                                      self.column_date_start]].apply(self._veh_age_get, axis=1)
+        df[self.column_veh_age] = df[[self.column_veh_issue_year, self.column_date_start]].apply(
+            self._veh_age_get, axis=1
+        )
         return df
 
 
@@ -141,14 +153,15 @@ class TransformVehAge:
             column type is integer.
         veh_age_max (int): Maximum value of vehicles' age in years, bigger values will be grouped, 25 by default.
     """
-    def __init__(self, column_veh_age, veh_age_max=25):
-        self.priority = 1
+
+    def __init__(self, column_veh_age, veh_age_max=25, priority=1):
+        self.priority = priority
         self.column_veh_age = column_veh_age
         self.veh_age_max = veh_age_max
 
     @staticmethod
     def _veh_age(age, age_max):
-        if pd.isnull(age):
+        if isnull(age):
             age = None
         elif age < 0:
             age = None
@@ -168,14 +181,15 @@ class TransformRegionGetFromKladr:
         column_kladr (str): Column name in InsolverDataFrame containing KLADRs, column type is string.
         column_region_num (str): Column name in InsolverDataFrame for regions' numbers, column type is integer.
     """
-    def __init__(self, column_kladr, column_region_num):
-        self.priority = 0
+
+    def __init__(self, column_kladr, column_region_num, priority=0):
+        self.priority = priority
         self.column_kladr = column_kladr
         self.column_region_num = column_region_num
 
     @staticmethod
     def _region_get(kladr):
-        if pd.isnull(kladr):
+        if isnull(kladr):
             region_num = None
         else:
             region_num = kladr[0:2]
@@ -200,17 +214,24 @@ class TransformCarFleetSize:
         column_date_start (str): Column name in InsolverDataFrame containing policies' start dates, column type is date.
         column_fleet_size (str): Column name in InsolverDataFrame for fleet sizes, column type is int.
     """
-    def __init__(self, column_id, column_date_start, column_fleet_size):
-        self.priority = 3
+
+    def __init__(self, column_id, column_date_start, column_fleet_size, priority=3):
+        self.priority = priority
         self.column_id = column_id
         self.column_date_start = column_date_start
         self.column_fleet_size = column_fleet_size
 
     def __call__(self, df):
-        cp = pd.merge(df[[self.column_id, self.column_date_start]], df[[self.column_id, self.column_date_start]],
-                      on=self.column_id, how='left')
-        cp = cp[(cp[f'{self.column_date_start}_y'] > cp[f'{self.column_date_start}_x'] - np.timedelta64(1, 'Y')) &
-                (cp[f'{self.column_date_start}_y'] <= cp[f'{self.column_date_start}_y'])]
+        cp = merge(
+            df[[self.column_id, self.column_date_start]],
+            df[[self.column_id, self.column_date_start]],
+            on=self.column_id,
+            how='left',
+        )
+        cp = cp[
+            (cp[f'{self.column_date_start}_y'] > cp[f'{self.column_date_start}_x'] - timedelta64(1, 'Y'))
+            & (cp[f'{self.column_date_start}_y'] <= cp[f'{self.column_date_start}_y'])
+        ]
         cp = cp.groupby(self.column_id).size().to_dict()
         df[self.column_fleet_size] = df[self.column_id].map(cp)
         return df

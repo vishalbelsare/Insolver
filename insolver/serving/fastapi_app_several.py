@@ -1,7 +1,6 @@
 import os
 import re
 import glob
-import pickle
 
 import pandas as pd
 from sympy import sympify
@@ -11,10 +10,10 @@ from fastapi import FastAPI
 from fastapi.encoders import jsonable_encoder
 
 from insolver import InsolverDataFrame
-from insolver.transforms import InsolverTransform, init_transforms
+from insolver.transforms import InsolverTransform, load_transforms
 from insolver.wrappers import InsolverGLMWrapper, InsolverGBMWrapper
 from insolver.serving import utils
-from insolver.configs.settings import *
+from insolver.configs.settings import FORMULA, FORMULA_CALCULATION, N_CORES, VARIABLES_LIST
 
 # For logging
 import logging
@@ -30,8 +29,6 @@ if os.environ['transforms_folder'] is not None:
     transforms_folder = os.environ['transforms_folder']
 if os.environ['config_file'] is not None:
     config_file = os.environ['config_file']
-if os.environ['module_path'] is not None:
-    module_path = os.environ['module_path']
 
 # Logging
 handler = RotatingFileHandler('app.log', maxBytes=100000, backupCount=5)
@@ -87,10 +84,8 @@ for i, model_path in enumerate(models):
 
     mlist.append(model)
 
-    # load and init transformations
-    with open(transforms[i], 'rb') as file:
-        transformations = pickle.load(file)
-    transformations = init_transforms(transformations, module_path=module_path, inference=True)
+    # load transformations
+    transformations = load_transforms(transforms[i])
 
     tlist.append(transformations)
 
@@ -129,7 +124,6 @@ def index():
 
 @app.post("/predict")
 def predict(data: Data):
-
     start_prediction = time()
 
     data_dict = data.dict()
@@ -148,9 +142,6 @@ def predict(data: Data):
     end_prediction = time()
     duration = round(end_prediction - start_prediction, 6)
 
-    result = {
-        'result': float(formula_sympy.subs(dict_variables).evalf()),
-        'duration': duration
-    }
+    result = {'result': float(formula_sympy.subs(dict_variables).evalf()), 'duration': duration}
 
     return jsonable_encoder(result)

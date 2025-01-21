@@ -1,21 +1,9 @@
-# Configuration file for the Sphinx documentation builder.
-#
-# This file only contains a selection of the most common options. For a full
-# list see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
-
-# -- Path setup --------------------------------------------------------------
-
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-#
 import os
 import sys
 from datetime import datetime
+from importlib.metadata import version
 
 sys.path.insert(0, os.path.abspath('../insolver/'))
-
 
 # -- Project information -----------------------------------------------------
 
@@ -23,11 +11,8 @@ project = 'Insolver'
 copyright = f'2020-{datetime.now().year}, MindSet Team'
 author = 'MindSet Team'
 
-# The full version, including alpha/beta/rc tags
-with open('../VERSION', "r", encoding="utf-8") as v:
-    v = v.read()
-
-release = version = v
+release = version('insolver')
+version = '.'.join(release.split('.')[:3])
 
 
 # -- General configuration ---------------------------------------------------
@@ -47,7 +32,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
     'sphinx.ext.napoleon',
-    'myst_parser'
+    'myst_parser',
 ]
 
 # Napoleon settings
@@ -87,7 +72,4 @@ html_theme = 'sphinx_rtd_theme'
 # so a file named "default.css" will overwrite the builtin "default.css".
 # html_static_path = ['_static']
 
-source_suffix = {
-    '.md': 'markdown',
-    '.rst': 'restructuredtext'
-}
+source_suffix = {'.md': 'markdown', '.rst': 'restructuredtext'}

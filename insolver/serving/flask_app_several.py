@@ -1,16 +1,15 @@
 import json
 import os
-import pickle
 
 import pandas as pd
 from flask import Flask, request, jsonify
 from sympy import sympify
 
 from insolver import InsolverDataFrame
-from insolver.transforms import InsolverTransform, init_transforms
+from insolver.transforms import InsolverTransform, load_transforms
 from insolver.wrappers import InsolverGLMWrapper, InsolverGBMWrapper
 from insolver.serving import utils
-from insolver.configs.settings import *
+from insolver.configs.settings import FORMULA, FORMULA_CALCULATION, N_CORES, VARIABLES_LIST
 
 import re
 import glob
@@ -31,8 +30,6 @@ if os.environ['transforms_folder'] is not None:
     transforms_folder = os.environ['transforms_folder']
 if os.environ['config_file'] is not None:
     config_file = os.environ['config_file']
-if os.environ['module_path'] is not None:
-    module_path = os.environ['module_path']
 
 # Logging
 handler = RotatingFileHandler('app.log', maxBytes=100000, backupCount=5)
@@ -83,10 +80,8 @@ for i, model_path in enumerate(models):
 
     mlist.append(model)
 
-    # load and init transformations
-    with open(transforms[i], 'rb') as file:
-        transformations = pickle.load(file)
-    transformations = init_transforms(transformations, module_path=module_path, inference=True)
+    # load transformations
+    transformations = load_transforms(transforms[i])
 
     tlist.append(transformations)
 
@@ -161,10 +156,7 @@ def predict():
     current_datatime = strftime('[%Y-%b-%d %H:%M:%S]')
     logger.info(f'{current_datatime} predicted for {duration} msec: {result}\n')
 
-    result = {
-        'result': result,
-        'duration': duration
-    }
+    result = {'result': result, 'duration': duration}
 
     return jsonify(result)
 
@@ -173,13 +165,15 @@ def predict():
 def exceptions(e):
     current_datatime = strftime('[%Y-%b-%d %H:%M:%S]')
     error_message = traceback.format_exc()
-    logger.error('%s %s %s %s %s 5xx INTERNAL SERVER ERROR\n%s',
-                 current_datatime,
-                 request.remote_addr,
-                 request.method,
-                 request.scheme,
-                 request.full_path,
-                 error_message)
+    logger.error(
+        '%s %s %s %s %s 5xx INTERNAL SERVER ERROR\n%s',
+        current_datatime,
+        request.remote_addr,
+        request.method,
+        request.scheme,
+        request.full_path,
+        error_message,
+    )
     return jsonify({'error': 'Internal Server Error'}), 500
 
 
